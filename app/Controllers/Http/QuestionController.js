@@ -1,7 +1,7 @@
 'use strict'
 
 const Questions = use("App/Models/Question")
-
+const QuestionResp = use("App/Models/QuestionResp")
 const QuestionRespSeq = use("App/Models/QuestionRespSeq")
 
 
@@ -107,17 +107,48 @@ class QuestionController {
     return questionsrespseq
   }
 
-  async primeiraQuestao ({  }) {
-    const question = await Questions.first()
-    return question
-   
+  async primeiraQuestao ({ request, response}) {
+    return await Questions.query().where('questionnaire_version_id_carga', 1)
+    .orderBy('question_edited_number')
+    .limit(1)
+    .fetch();
   }
 
-  async proxima ({  }) {
-    const question_resp_seq = await QuestionRespSeq.all()
-    return question_resp_seq 
+  async proxima ({request}) {
+    return await Questions.query()
+    .where(
+      {
+        questionnaire_version_id_carga: request.params.carga,
+        question_edited_number: request.params.question_edited_number 
+      }
+    )
+    .fetch();
   }
 
+  async save_and_next ({request}) {
+    const body = JSON.parse(request.body.json);
+    const answer = new QuestionResp();
+    answer.fill({
+      application_config_id: body.answer.application_config_id,
+      question_id: body.answer.question_id,
+      phase_id: body.answer.phase_id,
+      interviewer_id: body.answer.interviewer_id,
+      respondent_id: body.answer.respondent_id,
+      answer_yes_no: body.answer.answer_yes_no,
+      answer_comments: body.answer.answer_comments,
+      answer_observation: body.answer.answer_observation
+    })
+    await answer.save()
+    return await Questions.query()
+    .where(
+      {
+        questionnaire_version_id_carga: body.next.carga,
+        question_edited_number: body.next.question_edited_number 
+      }
+    )
+    .fetch();
+  }
 }
 
 module.exports = QuestionController
+

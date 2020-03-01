@@ -26,4 +26,11 @@ Route.post('/resposta', 'QuestionRespController.create')
 Route.post('/resposta/:id', 'QuestionRespController.update')
 Route.get('/consulta', 'QuestionController.consulta')
 Route.get('/primeiraQuestao', 'QuestionController.primeiraQuestao')
-Route.get('/proxima', 'QuestionController.proxima')
+Route.get(
+    '/proxima/carga/:carga/question_edited_number/:question_edited_number', 
+    'QuestionController.proxima'
+    )
+Route.post(
+    '/save_and_next', 
+    'QuestionController.save_and_next'
+    )
