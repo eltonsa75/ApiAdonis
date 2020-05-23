@@ -5,14 +5,14 @@ const Schema = use('Schema')
 
 class QuestionRespsSeqSchema extends Schema {
   up () {
-    this.table('question_resps_seq', (table) => {
+    this.create('question_resps_seqs', (table) => {
       table.increments()
       table.timestamps()
     })
   }
 
   down () {
-    this.drop('question_resps_seq')
+    this.drop('question_resps_seqs')
   }
 }
 

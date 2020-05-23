@@ -27,20 +27,7 @@ class QuestionController {
     const questions = await Questions.all();
     return questions
   }
-
-  /**
-   * Render a form to be used for creating a new question.
-   * GET questions/create
-   *
-   * @param {object} ctx
-   * @param {Request} ctx.request
-   * @param {Response} ctx.response
-   * @param {View} ctx.view
-   */
-  async create ({ request, response, view }) {
  
-  }
-
   /**
    * Create/save a new question.
    * POST questions
@@ -49,8 +36,8 @@ class QuestionController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async store ({ params }) {
-    const question = await Questions.findOrFail(params.id);
+  async store ({ params: { id } }) {
+    const question = await Questions.findOrFail(id);
     return question
    
   }
