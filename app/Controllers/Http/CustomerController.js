@@ -27,8 +27,7 @@ class CustomerController {
   return response.send(customers)
   }
 
-
-  /**
+    /**
    * Create/save a new customer.
    * POST customers
    *
@@ -62,8 +61,10 @@ class CustomerController {
   async show ({ params: { id }, request}) {
    return await Customer.query()
    .where('master_company_id', id)
+   .limit(1)
    .fetch();
   }
+
 
   /**
    * Update customer details.

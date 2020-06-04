@@ -58,6 +58,7 @@ class BusinessUnitController {
   async show ({ params: { id }, request}) {
     return await BusinessUnit.query()
     .where('customer_id', id)
+    .limit(1)
     .fetch();
   }
 

@@ -61,6 +61,7 @@ class AreaController {
     async show ({ params: { id }, request}) {
      return await Area.query()
      .where('customer_id', id)
+     .limit(1)
      .fetch();
     }
   

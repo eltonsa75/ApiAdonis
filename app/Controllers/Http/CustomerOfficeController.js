@@ -61,6 +61,7 @@ class CustomerOfficeController {
   async show ({ params: { id }, request}) {
     return await CustomerOffice.query()
     .where('customer_id', id)
+    .limit(1)
     .fetch();
   }
 

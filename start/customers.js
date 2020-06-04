@@ -28,3 +28,4 @@ Route.post('/registercustomer', 'CustomerController.store')
 Route.put('/updatecustomer/:id', 'CustomerController.update')
 // Rota que deleta os dados dos Clientes
 Route.delete('/deletecustomer/:id', 'CustomerController.destroy')
+
