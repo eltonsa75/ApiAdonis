@@ -61,7 +61,7 @@ class CustomerController {
   async show ({ params: { id }, request}) {
    return await Customer.query()
    .where('master_company_id', id)
-   .limit(1)
+   .limit()
    .fetch();
   }
 

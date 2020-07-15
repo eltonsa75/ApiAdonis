@@ -4,10 +4,12 @@
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 
+const QuestionnaireVersions = use("App/Models/QuestionnaireVersions")
+
 /**
  * Resourceful controller for interacting with questionnaireversions
  */
-class QuestionnaireVersionController {
+class QuestionnaireVersionsController {
   /**
    * Show a list of all questionnaireversions.
    * GET questionnaireversions
@@ -17,8 +19,11 @@ class QuestionnaireVersionController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  async index ({ request, response, view }) {
-  }
+  async index ({ request, response}) {
+    const questionnaireVersions = await QuestionnaireVersions.all()
+    return response.send(questionnaireVersions)
+    }
+
 
   /**
    * Render a form to be used for creating a new questionnaireversion.
@@ -90,4 +95,4 @@ class QuestionnaireVersionController {
   }
 }
 
-module.exports = QuestionnaireVersionController
+module.exports = QuestionnaireVersionsController

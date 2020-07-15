@@ -55,7 +55,11 @@ require('./businessnits')
 
 require('./questionnaireForm')
 
+require('./questionnaireVersions')
+
 require('./interviewee')
+
+require('./questApplicationLog')
 
 
 

@@ -49,7 +49,8 @@ class ApplicationConfigController {
       interviewee_4_id,
       interviewee_5_id,
       location,
-      general_considerations } = request.all()
+      general_considerations,
+      other_participants } = request.all()
       let app
       const applicationconfigs = await 
       ApplicationConfig.create({ 
@@ -66,7 +67,8 @@ class ApplicationConfigController {
       interviewee_4_id,
       interviewee_5_id,
       location,
-      general_considerations
+      general_considerations,
+      other_participants
     })
     // Retorno da API
       app = await ApplicationConfig.query()
