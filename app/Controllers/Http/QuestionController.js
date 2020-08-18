@@ -3,6 +3,7 @@
 const Questions = use("App/Models/Question")
 const QuestionResp = use("App/Models/QuestionResp")
 const QuestionRespSeq = use("App/Models/QuestionRespSeq")
+const Database = use('Database')
 
 
 
@@ -27,7 +28,25 @@ class QuestionController {
     const questions = await Questions.all();
     return questions
   }
- 
+
+
+  // Método retorno da Questão
+  async proximaPR ({request}) {
+
+    return await Database
+    .select('*')
+    .from('question')
+    .leftOuterJoin('question_resps', 'question.id', 'question_resps.question_id')
+    .leftOuterJoin('application_configs', 'question_resps.application_config_id', 'application_configs.id')
+    .where(
+      {
+        application_config_id: request.params.carga,
+        question_edited_number: request.params.question_edited_number
+      }
+    )
+  }
+
+
   /**
    * Create/save a new question.
    * POST questions
@@ -97,7 +116,7 @@ class QuestionController {
   async primeiraQuestao ({ request, response}) {
     return await Questions.query().where('questionnaire_version_id_carga', 1)
     .orderBy('question_edited_number')
-    .limit(1)
+    .limit()
     .fetch();
   }
 

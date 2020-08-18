@@ -5,7 +5,7 @@ const Model = use('Model')
 
 class Interviewee extends Model {
     static get table() {
-        return "Interviewees"
+        return "interviewees"
     }
 
     static get createdAtColumn() {

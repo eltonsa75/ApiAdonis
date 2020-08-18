@@ -40,6 +40,10 @@ Route.post(
     'QuestionController.save_and_next'
     )
 
+Route.get('/proximaPR/carga/:carga/question_edited_number/:question_edited_number', 
+        'QuestionController.proximaPR'
+        )
+
 
 require('./application_configs')
 

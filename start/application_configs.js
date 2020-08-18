@@ -22,7 +22,9 @@ Route.get('/application', 'ApplicationConfigController.index')
 Route.post('/registerapplication', 'ApplicationConfigController.store')
 
 
-Route.get('/retorno/:id', 'ApplicationConfigController.show')
+//Route.get('/retorno/:id', 'ApplicationConfigController.show')
+Route.get('/showapp', 'ApplicationConfigController.showapp')
+
 
 
 

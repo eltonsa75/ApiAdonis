@@ -100,19 +100,28 @@ class ApplicationConfigController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  // Retorno do forrmulário Entrevista
-  async show ({ params: { id }, request, response}) {
-    const applicationconfigs = await ApplicationConfig.query()
-    .select('customers.fantasy_name', 'customer_offices.customer_office_name', 'business_units.business_unit_name', 'areas.area_name')
-    .leftJoin('customers', 'application_configs.customer_id', 'customers.id')
-    .leftJoin('customer_offices', 'application_configs.customer_office_id', 'customer_offices.id')
-    .leftJoin('business_units', 'application_configs.business_unit_id', 'business_units.id')
-    .leftJoin('areas', 'application_configs.area_id', 'areas.id')
-    .where('application_configs.id', '=', request.params.id)
-    .limit(1)
-    .fetch()
-    return response.send(applicationconfigs)
-  }
+// Retorno das Entrevistas disponibilizadas para o consultor para determinado cliente
+async showapp ({ params, request, response}) {
+  const applicationconfigs = await ApplicationConfig.query()
+  .select('application_configs.id',
+   'application_configs.status',
+   'questionnaire_forms.questionnaire_form_name',
+   'questionnaire_versions.questionnaire_version_name',
+   'questionnaire_versions.id as questionnaire_version_id',
+   'customers.fantasy_name',
+   'customer_offices.customer_office_name',
+   'business_units.business_unit_name',
+   'areas.area_name')
+  .leftJoin('questionnaire_versions', 'application_configs.questionnaire_version_id', 'questionnaire_versions.id')
+  .leftJoin('questionnaire_forms', 'questionnaire_versions.questionnaire_form_id', 'questionnaire_forms.id')
+  .leftJoin('customers', 'application_configs.customer_id', 'customers.id')
+  .leftJoin('customer_offices', 'application_configs.customer_office_id', 'customer_offices.id')
+  .leftJoin('business_units', 'application_configs.business_unit_id', 'business_units.id')
+  .leftJoin('areas', 'application_configs.area_id', 'areas.id')
+  .fetch()
+  return response.send(applicationconfigs)
+}
+
 
   /**
    * Update applicationconfig details.
