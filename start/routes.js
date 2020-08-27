@@ -17,9 +17,15 @@
 
 const Route = use('Route')
 
-Route.post('/users', 'UserController.create')
+Route.group(() => {
+    Route.post('login', 'UserController.login')
+    Route.post('register', 'UserController.register')
+    Route.get('getuser/:id', 'UserController.show')
+}).prefix('users')
+
 
 Route.get('/questions', 'QuestionController.index')
+
 Route.post('/question/:id', 'QuestionController.store')
 Route.get('/resposta', 'QuestionRespController.index')
 Route.post('/resposta', 'QuestionRespController.create')
@@ -34,3 +40,32 @@ Route.post(
     '/save_and_next', 
     'QuestionController.save_and_next'
     )
+
+Route.get('/proximaPR/carga/:carga/question_edited_number/:question_edited_number', 
+        'QuestionController.proximaPR'
+        )
+
+
+require('./application_configs')
+
+require('./area')
+
+require('./mastercompanies')
+
+require('./customers')
+
+require('./customersoffice')
+
+require('./businessnits')
+
+require('./questionnaireForm')
+
+require('./questionnaireVersions')
+
+require('./interviewee')
+
+require('./questApplicationLog')
+
+
+
+

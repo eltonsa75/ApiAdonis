@@ -5,12 +5,36 @@ const User = use("App/Models/User")
 
 class UserController {
 
-    async create ({request}) {
-        const data = request.only(["username", "email", "password"])
-        console.log(data)
-        const user = await User.create(data)
+ async login({request, response, auth}) {
+     const {email, password,} = request.only(['email', 'password'])
 
-        return user
+     const token = await auth.attempt(email, password)
+     return response.json(token)
+ }
+
+ async register({request, response}){
+     const {first_name, last_name, email, password} = request.only([
+         'first_name', 'last_name',
+         'email','password'
+     ])
+
+     await User.create({
+         first_name,
+         last_name,
+         email,
+         password
+     })
+
+     return response.send({messager: 'Usuário criado com sucesso!'})
+ }
+    async show({params, response}){
+        const user = await User.find(params.id)
+        const res = {
+            first_name: user.first_name,
+            last_name: user.last_name,
+            email: user.email
+        }
+        return response.json(res)
     }
 
 }

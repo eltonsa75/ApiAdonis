@@ -1,6 +1,11 @@
 'use strict'
 
+
+const QuestionResp = use("App/Models/QuestionResp")
 const Resposta = use("App/Models/QuestionResp")
+const UserParameter = use("App/Models/UserParameter")
+const Database = use('Database')
+
 
 /** @typedef {import('@adonisjs/framework/src/Request')} Request */
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
@@ -34,21 +39,50 @@ class QuestionRespController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  async create ({ request }) {
+  async create ({ request, auth }) {
+
     const data = request.only([
-      "response_id",
       "application_config_id",
       "question_id",
       "phase_id",
-      "interviewer_id",
       "respondent_id",
       "answer_yes_no",
       "answer_comments",
-      "answer_observation"
+      "answer_observation",
+      "interviewer_id"
     ])
-    const resposta = await Resposta.create(data)
-    return resposta
-  }
+
+      //Obtém o Id do usuário
+      const usuarioLogado = await auth.getUser();
+      const user_id = usuarioLogado.id;
+    
+      /* Falta agora fazer o select para pegar o application_config_id deste user*/
+      const selected_fields = await Database.select('application_config_id').from('user_parameters').where('id', user_id)
+      data.application_config_id = selected_fields[ 0 ].application_config_id
+      data.interviewer_id = user_id
+
+      const resposta = await Resposta.create(data)
+
+      /* Sinaliza que a entrevista começou */
+      try {
+
+        const affectedRows = await Database  
+        .table('application_configs')
+        .where('id', selected_fields[ 0 ].application_config_id)
+        .update({ status: 1 })
+
+          } catch(error) {
+            return response
+            .status(400)
+            .send({ message: 'Não foi possível atualizar o status da entrevista'})
+          }
+
+      /* Retorna */
+
+      return resposta
+    }
+
+ 
 
   /**
    * Create/save a new questionresp.
@@ -93,10 +127,11 @@ class QuestionRespController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async update ({ params, request, response }) {
+  async update ({ params, request, auth, response }) {
+
     const resposta = await Resposta.findOrFail(params.id);
+
     const data = request.only([
-    "response_id",
     "application_config_id",
     "question_id",
     "phase_id",
@@ -105,11 +140,23 @@ class QuestionRespController {
     "answer_yes_no",
     "answer_comments",
     "answer_observation"]);
+
     resposta.merge(data);
-    await resposta.save();
+
+    //Obtém o Id do usuário
+    const usuarioLogado = await auth.getUser();
+    const user_id = usuarioLogado.id;
+   
+    /* Falta agora fazer o select para pegar o application_config_id deste user*/
+    const selected_fields = await Database.select('application_config_id').from('user_parameters').where('id', user_id)
+    resposta.application_config_id = selected_fields[ 0 ].application_config_id
+    resposta.interviewer_id = user_id
+    await resposta.save()
 
     return resposta
+
   }
+
 
   /**
    * Delete a questionresp with id.
