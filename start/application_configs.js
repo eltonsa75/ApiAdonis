@@ -19,7 +19,7 @@ const Route = use('Route')
 
 // Rota tras todas as Aplicações 
 Route.get('/application', 'ApplicationConfigController.index')
-Route.post('/registerapplication', 'ApplicationConfigController.store')
+Route.put('/registerapplication/:id', 'ApplicationConfigController.store')
 
 
 //Route.get('/retorno/:id', 'ApplicationConfigController.show')

@@ -19,10 +19,27 @@ class QuestionnaireFormController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
+  /*
   async index ({ request, response}) {
     const questionnaireForm = await QuestionnaireForm.all()
     return response.send(questionnaireForm)
     }
+*/
+async index ({ request, auth, response}) {
+
+  //Obtém o Id do usuário
+  //const usuarioLogado = await auth.getUser()
+  //const user_id = usuarioLogado.id;
+
+  const user_id = 25
+  return await QuestionnaireForm.query()
+  .leftJoin('questionnaire_versions', 'questionnaire_versions.questionnaire_form_id', 'questionnaire_forms.id' )
+  .leftJoin('user_parameters', 'user_parameters.questionnaire_version_id', 'questionnaire_versions.id' )
+  .where('user_parameters.id', user_id)
+  .limit(1)
+  .fetch();
+}
+
 
   /**
    * Render a form to be used for creating a new questionnaireform.

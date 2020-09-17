@@ -25,6 +25,7 @@ Route.group(() => {
 
 
 Route.get('/questions', 'QuestionController.index')
+
 Route.post('/question/:id', 'QuestionController.store')
 Route.get('/resposta', 'QuestionRespController.index')
 Route.post('/resposta', 'QuestionRespController.create')
@@ -35,10 +36,7 @@ Route.get(
     '/proxima/carga/:carga/question_edited_number/:question_edited_number', 
     'QuestionController.proxima'
     )
-Route.post(
-    '/save_and_next', 
-    'QuestionController.save_and_next'
-    )
+Route.post('/save_and_next', 'QuestionController.save_and_next')
 
 Route.get('/proximaPR/carga/:carga/question_edited_number/:question_edited_number', 
         'QuestionController.proximaPR'

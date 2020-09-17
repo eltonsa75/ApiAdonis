@@ -6,7 +6,10 @@
 const Model = use('Model')
 
 class QuestionResp extends Model {
-
+    static get table(){
+    
+        return "question_resps"
+    }
 }
 
 module.exports = QuestionResp

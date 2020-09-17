@@ -19,12 +19,27 @@ class QuestionnaireVersionsController {
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
+  /*
   async index ({ request, response}) {
     const questionnaireVersions = await QuestionnaireVersions.all()
     return response.send(questionnaireVersions)
     }
+    */
 
+   async index ({ request, response}) {
 
+    //Obtém o Id do usuário
+    //const usuarioLogado = await auth.getUser()
+    //const user_id = usuarioLogado.id;
+    const user_id = 25
+
+    const questionnaireVersions = await QuestionnaireVersions.query()
+    .leftJoin('user_parameters', 'user_parameters.questionnaire_version_id', 'questionnaire_versions.id' )
+    .where('user_parameters.id', user_id)
+    .limit(1)
+    .fetch();
+    return response.send(questionnaireVersions)
+   }
   /**
    * Render a form to be used for creating a new questionnaireversion.
    * GET questionnaireversions/create
