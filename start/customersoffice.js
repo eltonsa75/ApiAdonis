@@ -18,9 +18,9 @@
 const Route = use('Route')
 
 
-// Rota tras todas as Filiais (CustomerOffice)
+// Rota traz todas as Filiais (CustomerOffice)
 Route.get('/customersoffice', 'CustomerOfficeController.index')
-// Rota traser filial passando ID (CustomerOffice)
+// Rota trazer filial passando ID (CustomerOffice)
 Route.get('/customersofficesearch/:id', 'CustomerOfficeController.show')
 // Rota que cadastra as filiais (CustomerOffice)
 Route.post('/registercustomeroffice', 'CustomerOfficeController.store')

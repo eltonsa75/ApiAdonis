@@ -132,24 +132,28 @@ async primeiraQuestao ({ request, auth, response}) {
   const user_id = 25
 
   return await Questions.query()
-  .innerJoin('questionnaire_versions', 'question.questionnaire_version_id', 'questionnaire_versions.id' )
-  .innerJoin('questionnaire_forms', 'questionnaire_versions.questionnaire_form_id', 'questionnaire_forms.id' )
-  .innerJoin('user_parameters', 'user_parameters.questionnaire_version_id', 'questionnaire_versions.id' )
-  .where('user_parameters.id', user_id)
-  .select(
-    'question.id',
-    'question.question_theme_id',
-    'question.phase_id',
-    'question.question_edited_number',
-    'question.if_yes',
-    'question.if_no',
-    'question.if_back',
-    'question.question_enunciation',
-    'question.questionnaire_version_id_carga',
-    'question.questionnaire_version_id')
-  .orderBy('question_edited_number')
-  .limit(1)
-  .fetch();
+    .innerJoin('questionnaire_versions', 'question.questionnaire_version_id', 'questionnaire_versions.id' )
+    .innerJoin('questionnaire_forms', 'questionnaire_versions.questionnaire_form_id', 'questionnaire_forms.id' )
+    .innerJoin('application_configs', 'question.id', 'application_configs.question_to_present' )
+    .innerJoin('user_parameters', 'user_parameters.application_config_id', 'application_configs.id' )
+    .innerJoin('question_theme', 'question.question_theme_id', 'question_theme.id' )
+    .where('user_parameters.id', user_id)
+    .select(
+      'question.id',
+      'application_configs.question_to_present',
+      'question.question_theme_id',
+      'question_theme.question_theme',
+      'question.phase_id',
+      'question.question_edited_number',
+      'question.if_yes',
+      'question.if_no',
+      'question.if_back',
+      'question.question_enunciation',
+      'question.questionnaire_version_id_carga',
+      'question.questionnaire_version_id')
+    .orderBy('question_edited_number')
+    .limit(1)
+    .fetch();
 }
 
 
