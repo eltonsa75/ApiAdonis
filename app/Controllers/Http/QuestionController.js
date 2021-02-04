@@ -128,32 +128,40 @@ async primeiraQuestao ({ request, auth, response}) {
   //Obtém o Id do usuário
   //const usuarioLogado = await auth.getUser()
   //const user_id = usuarioLogado.id;
+  //#APIALTERADA#
 
   const user_id = 25
 
   return await Questions.query()
-    .innerJoin('questionnaire_versions', 'question.questionnaire_version_id', 'questionnaire_versions.id' )
-    .innerJoin('questionnaire_forms', 'questionnaire_versions.questionnaire_form_id', 'questionnaire_forms.id' )
-    .innerJoin('application_configs', 'question.id', 'application_configs.question_to_present' )
-    .innerJoin('user_parameters', 'user_parameters.application_config_id', 'application_configs.id' )
-    .innerJoin('question_theme', 'question.question_theme_id', 'question_theme.id' )
-    .where('user_parameters.id', user_id)
-    .select(
-      'question.id',
-      'application_configs.question_to_present',
-      'question.question_theme_id',
-      'question_theme.question_theme',
-      'question.phase_id',
-      'question.question_edited_number',
-      'question.if_yes',
-      'question.if_no',
-      'question.if_back',
-      'question.question_enunciation',
-      'question.questionnaire_version_id_carga',
-      'question.questionnaire_version_id')
-    .orderBy('question_edited_number')
-    .limit(1)
-    .fetch();
+  .innerJoin('questionnaire_versions', 'question.questionnaire_version_id', 'questionnaire_versions.id' )
+  .innerJoin('questionnaire_forms', 'questionnaire_versions.questionnaire_form_id', 'questionnaire_forms.id' )
+  .innerJoin('application_configs', 'question.id', 'application_configs.question_to_present' )
+  .innerJoin('user_parameters', 'user_parameters.application_config_id', 'application_configs.id' )
+  .innerJoin('question_theme', 'question.question_theme_id', 'question_theme.id' )    
+  .leftOuterJoin('question_resps', 'question.id', 'question_resps.question_id')
+  .where('user_parameters.id', user_id)
+  .select(
+    'question.id',
+    'question.question_theme_id',
+    'question_theme.question_theme',
+    'questionnaire_versions.last_question_number',
+    'application_configs.responses_qtd',
+    'question.phase_id',
+    'question.question_edited_number',
+    'question.if_yes',
+    'question.if_no',
+    'question.if_back',
+    'question.question_enunciation',
+    'question.questionnaire_version_id_carga',
+    'question.questionnaire_version_id',
+    'question_resps.answer_yes_no',
+    'question_resps.answer_comments',
+    'question_resps.answer_observation'
+    )
+
+  .orderBy('question_edited_number')
+  .limit(1)
+  .fetch();
 }
 
 
@@ -266,9 +274,31 @@ async proxima ({request}) {
 
 
 // Atualizando o Método save_and_next
-async save_and_next ({request, auth}) {
+async save_and_next ({request, auth, response}) {
+
+  //#APIALTERADA#
+
+  /****************************************************************
+      Quantas questões-mãe tem aquela Versão do Questionário 
+      SELECT COUNT(1) qtd_question_mother FROM question q WHERE
+      q.questionnaire_version_id = 1 AND q.question_mother = 'Y'
+
+      SELECT count(qr.application_config_id) FROM question_resps qr 
+      INNER JOIN question q ON qr.question_id = q.id
+      INNER JOIN application_configs ac ON qr.application_config_id = ac.id
+      WHERE qr.answer_yes_no <> 3 AND 
+      qr.application_config_id = 1 and
+      q.question_mother = 'Y'
+
+  *****************************************************************/
+
 
   const body = JSON.parse(request.body.json);
+
+  console.log(body);
+
+  const now = new Date();
+
 
   //Obtém o Id do usuário
   //const usuarioLogado = await auth.getUser();
@@ -278,11 +308,11 @@ async save_and_next ({request, auth}) {
   /* Select para pegar o application_config_id deste user*/
   const selected_fields = await Database.select('application_config_id').from('user_parameters').where('id', user_id)
   const application_config_id = selected_fields[ 0 ].application_config_id
-  //console.log('application_config_id:')
-  //console.log(application_config_id)
+  console.log('application_config_id:')
+  console.log(application_config_id)
 
   //console.log('body.answer.question_id:')
-  //console.log(body.answer.question_id)
+  console.log(body.answer.question_id)
 
   /* Faz o FindOrFail para ver se existe resposta */
 
@@ -312,6 +342,8 @@ async save_and_next ({request, auth}) {
 
       }
 
+
+
   //console.log('question_resp_id:')
   //console.log(question_resp_id)
 
@@ -336,6 +368,7 @@ async save_and_next ({request, auth}) {
       answer.interviewer_id = user_id
       await answer.save();
       //console.log('3.1'); 
+
 
   } else {
 
@@ -394,34 +427,112 @@ async save_and_next ({request, auth}) {
   
   //console.log('5.2'); 
 
-  /* Sinaliza que a entrevista começou */
-  try {
-
-    const affectedRows = await Database  
-    .table('application_configs')
-    .where('id', selected_fields[ 0 ].application_config_id)
-    .update({ status: 1 })
-
-      } catch(error) {
-        return response
-        .status(400)
-        .send({ message: 'Não foi possível atualizar o status da entrevista'})
-      }
-
   //console.log('6'); 
 
-  /* Retorna a próxima questão */
+  /* SQL DE REFERÊNCIA PARA BUSCAR O NRO DE RESPOSTAS ->
+  SELECT count(qr.application_config_id) 
+    FROM question_resps qr 
+      INNER JOIN question q ON qr.question_id = q.id
+      INNER JOIN application_configs ac ON qr.application_config_id = ac.id
+  WHERE qr.answer_yes_no <> 3 AND 
+    qr.application_config_id = 1 and
+    q.question_mother = 'Y'
+  */
+
+  /* Obtem o número de respostas para esta aplicação do questionário */ 
+  var qtd_respostas = 0
+  try {
+    /* Obtém a quantidade de respostas para esta aplicação */
+    const count_resps = await Database
+    .from('question_resps')
+    .innerJoin('question', 'question_resps.question_id', 'question.id' )
+    .innerJoin('application_configs', 'question_resps.application_config_id', 'application_configs.id' )
+    .where(function () {
+      this
+      .where('question_resps.application_config_id', application_config_id)
+      .andWhere('question.question_mother', 'Y')
+      .andWhere(function() {
+        this.where('question_resps.answer_yes_no', '<>', 3)
+      })
+    })
+    .count()
+    try {
+      qtd_respostas = count_resps[0]['count(*)']  // returns number
+    }  catch(error) {
+      qtd_respostas = 0
+    }
+  } catch(error) {
+
+    //console.log ('error:')
+    //console.log (error)
+
+    qtd_respostas = 0
+
+  }
+
+  /**********************************/
+      /**********************************/
+          /**********************************/
+
+  /* Atualizações na tabela application_configs:
+     Status: 1 = Entrevista Em Andamento
+     response_qtd: O número de respostas para esta aplicação
+     question_to_present: A próxima questão a ser apresentada
+
+  */
+ try {
+
+  const affectedRows = await Database  
+  .table('application_configs')
+  .where('id', application_config_id)
+  .update({ 
+    status: 1,
+    responses_qtd:  qtd_respostas,
+    question_to_present: body.answer.question_id,
+    current_session_end_time: `${now.getHours()}:${now.getMinutes()}`,
+    current_session_elapsed_time: `${now.getHours()}:${now.getMinutes()}`,
+    interview_total_elapsed_time: `${now.getHours()}:${now.getMinutes()}`
+   })
+
+    } catch(error) {
+      return response
+      .status(400)
+      .send({ message: 'Não foi possível atualizar o registro da aplicação do questionário de id = '+application_config_id})
+    }
+
+  //* Cálculo do current_session_elapsed_time */
+  try {
+
+  await Database 
+  .raw('UPDATE application_configs ac SET ac.current_session_elapsed_time = timediff(ac.current_session_end_time, ac.current_session_start_time) WHERE ac.id = ?', [application_config_id])
+    } catch(error) {
+    return response
+    .status(400)
+    .send({ message: 'Não foi possível calcular o elapsed time de Application_Configs = '+application_config_id})
+    }
+
+
+          //current_session_start_time: `${now.getHours()}:${now.getMinutes()}`,
+
+  /* Retorna a próxima questão, incluindo o cálculo da percentagem referente a barra de progresso */
   return await Questions.query()
+  .leftOuterJoin('questionnaire_versions', 'question.questionnaire_version_id', 'questionnaire_versions.id')
+  .leftOuterJoin('question_theme', 'question.question_theme_id', 'question_theme.id')
   .leftOuterJoin('question_resps', 'question.id', 'question_resps.question_id')
+  .leftOuterJoin('application_configs', 'question_resps.application_config_id', 'application_configs.id' )
   .where(
     {
       questionnaire_version_id_carga: body.next.carga,
       question_edited_number: body.next.question_edited_number 
     }
   )
+  //.andWhere('application_configs.id', application_config_id)
   .select(
     'question.id',
     'question.question_theme_id',
+    'question_theme.question_theme',
+    'questionnaire_versions.last_question_number',
+    'application_configs.responses_qtd',
     'question.phase_id',
     'question.question_edited_number',
     'question.if_yes',
@@ -432,7 +543,14 @@ async save_and_next ({request, auth}) {
     'question.questionnaire_version_id',
     'question_resps.answer_yes_no',
     'question_resps.answer_comments',
-    'question_resps.answer_observation' )
+    'question_resps.answer_observation'
+    /*
+    'application_configs.current_session_start_time',
+    'application_configs.current_session_end_time',
+    'application_configs.current_session_elapsed_time',
+    'application_configs.interview_total_elapsed_time'
+    */
+  )
   .fetch();
 }
 
