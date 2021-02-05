@@ -162,7 +162,8 @@ async primeiraQuestao ({ request, auth, response}) {
     'application_configs.current_session_start_time',
     'application_configs.current_session_end_time',
     'application_configs.current_session_elapsed_time',
-    'application_configs.interview_total_elapsed_time'
+    'application_configs.interview_total_elapsed_time',
+    'application_configs.status'
     )
 
   .orderBy('question_edited_number')
@@ -375,40 +376,39 @@ async save_and_next ({request}) {
     qtd_respostas = 0
   }    
 
-  console.log('qtd_respostas: '+qtd_respostas)
+  //console.log('qtd_respostas: '+qtd_respostas) 
 
   /* Atualizações na tabela application_configs:
      Status: 1 = Entrevista Em Andamento
-     response_qtd: O número de respostas para as questões-mãe
-     question_to_present: A primeira questão a ser apresentada
+     response_qtd: O número de respostas para esta aplicação
+     question_to_present: A próxima questão a ser apresentada
+     current_session_end_time: Tempo da última resposta
   */
-  try {
-    const affectedRows = await Database  
-    .table('application_configs')
-    .where('id', body.answer.application_config_id)
-    .update({ 
-      status: 1,
-      responses_qtd:  qtd_respostas,
-      question_to_present: body.answer.question_id,
-      current_session_end_time: `${now.getHours()}:${now.getMinutes()}`,
-      current_session_elapsed_time: `${now.getHours()}:${now.getMinutes()}`,
-      interview_total_elapsed_time: `${now.getHours()}:${now.getMinutes()}`
-    })
-  } catch(error) {
-    return response 
-    .status(400)
-    .send({ message: 'Não foi possível atualizar a aplicação de id = '+body.answer.application_config_id})
-  }    
+ try {
+  const affectedRows = await Database  
+  .table('application_configs')
+  .where('id', body.answer.application_config_id)
+  .update({ 
+          status: 1,
+          responses_qtd: qtd_respostas,
+          question_to_present: body.answer.question_id,
+          current_session_end_time: `${now.getHours()}:${now.getMinutes()}`
+          })
+      } catch(error) {
+          return response
+          .status(400)
+          .send({ message: 'Não foi possível atualizar a aplicação de id = '+body.answer.application_config_id})
+      }
 
-  /*** lê a próxima questão ***/   
-  //return await Questions.query()
-  //.where(
-  //  {
-  //    questionnaire_version_id_carga: body.next.carga,
-  //    question_edited_number: body.next.question_edited_number 
-  //  }
-  //)
-  //.fetch();
+    //* Cálculo do current_session_elapsed_time */
+  try {
+      await Database 
+      .raw('UPDATE application_configs SET current_session_elapsed_time = timediff(current_session_end_time, current_session_start_time) WHERE id = ?', [body.answer.application_config_id])
+      } catch(error) {
+        return response
+        .status(400)
+        .send({ message: 'Não foi possível calcular o tempo decorrido da aplicação do questionário de id = '+body.answer.application_config_id})
+      }
 
   /* Retorna a próxima questão, incluindo o cálculo da percentagem referente a barra de progresso */
   return await Questions.query()
@@ -449,10 +449,14 @@ async save_and_next ({request}) {
     'application_configs.current_session_start_time',
     'application_configs.current_session_end_time',
     'application_configs.current_session_elapsed_time',
-    'application_configs.interview_total_elapsed_time'
+    'application_configs.interview_total_elapsed_time',
+    'application_configs.status'
   )
+  .orderBy('question_edited_number')
+  .limit(1)
   .fetch();    
 }
+
 
 
 

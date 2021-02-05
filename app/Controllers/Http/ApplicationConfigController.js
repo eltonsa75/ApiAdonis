@@ -39,7 +39,7 @@ class ApplicationConfigController {
 
    async store ({ params: { id }, request, auth, response}) {
 
-    //#APIALTERADA 04/02/2021#
+    //#APIALTERADA#
   
      try {
             let app = await ApplicationConfig.findOrFail(request.params.id)
@@ -86,12 +86,17 @@ class ApplicationConfigController {
      .update({ application_config_id: request.params.id, 
                questionnaire_version_id: app2.rows[0].questionnaire_version_id })
   
-     /* Atualiza o registro de application_configs com a primeira questão a ser carregada */
-     const affectedRows2 = await Database  
-     .table('application_configs')
-     .where('id', request.params.id)
-     .update({ question_to_present: app2.rows[0].question_id })
+     /* Inicia a primeira questão do formulário - somente quando inicia o questionário  */
+     try {
+      const affectedRows2 = await Database  
+      .table('application_configs')
+      .where('id', request.params.id)
+      .andWhere('question_to_present', 0)
+      .update({ question_to_present: app2.rows[0].question_id }) 
+      } catch (error) {
   
+      }   
+     
      //console.log('Retorno da API',  app2.rows[0])
      return response.status(201).send(app2.rows[0])
   
