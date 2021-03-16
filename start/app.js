@@ -49,8 +49,8 @@ const aceProviders = [
 |
 */
 const aliases = {
-  Role: 'Adonis/Acl/Role',
-  Permission: 'Adonis/Acl/Permission',
+  //Role: 'Adonis/Acl/Role',
+  //Permission: 'Adonis/Acl/Permission',
 }
 
 /*

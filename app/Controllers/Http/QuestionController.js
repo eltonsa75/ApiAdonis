@@ -110,8 +110,6 @@ class QuestionController {
    */
   async destroy ({ params, request, response }) {
   }
-
-
   async consulta ({request}) {
     const questionsrespseq = await QuestionRespSeq.all();
     return questionsrespseq
@@ -181,107 +179,49 @@ async primeiraQuestao ({ request, auth, response}) {
     .fetch();
   }
 
-  async proxima ({request}) {  
-    return await Questions.query()
-    .leftOuterJoin('questionnaire_versions', 'question.questionnaire_version_id', 'questionnaire_versions.id')
-    .leftOuterJoin('question_theme', 'question.question_theme_id', 'question_theme.id')
-    .leftOuterJoin('question_resps', 'question.id', 'question_resps.question_id')
-    .leftOuterJoin('application_configs', 'question_resps.application_config_id', 'application_configs.id')
-    .where(
-        {
-          application_config_id: request.params.carga,
-          question_edited_number: request.params.question_edited_number
-          /*
-          questionnaire_version_id_carga: body.next.carga,
-          question_edited_number: body.next.question_edited_number 
-          */
-        }
-      )
-      .andWhere('question_resps.application_config_id', application_config_id)
-      .select
-      (
-        'question.id',
-        'question.question_theme_id',
-        'question_theme.question_theme',
-        'questionnaire_versions.last_question_number',
-        'application_configs.responses_qtd',
-        'question.phase_id',
-        'question.question_edited_number',
-        'question.if_yes',
-        'question.if_no',
-        'question.if_back',
-        'question.question_enunciation',
-        'question.questionnaire_version_id_carga',
-        'question.questionnaire_version_id',
-        'question_resps.answer_yes_no',
-        'question_resps.answer_comments',
-        'question_resps.answer_observation'
-      )
-      .fetch();
-  }
 
+  async proxima ({request, auth, response}) {    
 
-  async save_and_next_original ({request, auth}) {
-
-    const body = JSON.parse(request.body.json);
-    
-    const answer = new QuestionResp();
-    answer.fill({
-      application_config_id: body.answer.application_config_id,
-      question_id: body.answer.question_id,
-      phase_id: body.answer.phase_id,
-      interviewer_id: body.answer.interviewer_id,
-      respondent_id: body.answer.respondent_id,
-      answer_yes_no: body.answer.answer_yes_no,
-      answer_comments: body.answer.answer_comments,
-      answer_observation: body.answer.answer_observation
-    })
-
-    /** inicio */
-
+    /*
     //Obtém o Id do usuário
-    //const usuarioLogado = await auth.getUser();
+    //const usuarioLogado = await auth.getUser()
     //const user_id = usuarioLogado.id;
-
+    //#APIALTERADA#
+    */
     const user_id = 25
-
-    //console.log("user_id=", user_id)
-    //console.log('Retorno da API com user_id = ',  user_id)
-   
-    /* Falta agora fazer o select para pegar o application_config_id deste user*/
-    const selected_fields = await Database.select('application_config_id').from('user_parameters').where('id', user_id)
-    answer.application_config_id = selected_fields[ 0 ].application_config_id
-    answer.interviewer_id = user_id
-    await answer.save()
-
-    //const resposta = await Resposta.create(data)
-
-    /* Sinaliza que a entrevista começou */
-    try {
-
-      const affectedRows = await Database  
-      .table('application_configs')
-      .where('id', selected_fields[ 0 ].application_config_id)
-      .update({ status: 1 })
-
-        } catch(error) {
-          return response
-          .status(400)
-          .send({ message: 'Não foi possível atualizar o status da entrevista'})
-        }
-
-    /* Retorna a próxima questão */
-    return await Questions.query()
-    .leftOuterJoin('question_resps', 'question.id', 'question_resps.question_id')
-    .where(
-      {
-        questionnaire_version_id_carga: body.next.carga,
-        question_edited_number: body.next.question_edited_number 
+  
+    // Leitura dos parâmetros do usuário logado para obter primeira questão
+    let user_param
+    user_param = await UserParameter.query()
+    .select(
+    'user_parameters.application_config_id',
+    'user_parameters.questionnaire_version_id'
+     )
+    .where('user_parameters.id', '=', user_id)
+    .fetch()
+  
+    return await UserParameter.query()
+    .innerJoin('application_configs', 'application_configs.id', 'user_parameters.application_config_id' )
+    .innerJoin('questionnaire_versions', 'questionnaire_versions.id', 'user_parameters.questionnaire_version_id' )
+    .innerJoin('question', 'question.questionnaire_version_id', 'user_parameters.questionnaire_version_id' )
+    .innerJoin('question_theme', 'question_theme.id', 'question.question_theme_id' )    
+    .leftOuterJoin('question_resps', 'question_resps.question_id', 'question.id' )
+    .where('user_parameters.id', user_id)
+    .andWhere('questionnaire_versions.id', user_param.rows[0].questionnaire_version_id)
+    .andWhere('application_configs.id', user_param.rows[0].application_config_id)
+    .andWhere(
+      { 
+        question_edited_number: request.params.question_edited_number
       }
     )
     .select(
       'question.id',
+      'application_configs.id as application_config_id',
+      'user_parameters.id as user_parameter_id',
       'question.question_theme_id',
+      'question_theme.question_theme',
+      'questionnaire_versions.last_question_number',
+      'application_configs.responses_qtd',
       'question.phase_id',
       'question.question_edited_number',
       'question.if_yes',
@@ -292,18 +232,23 @@ async primeiraQuestao ({ request, auth, response}) {
       'question.questionnaire_version_id',
       'question_resps.answer_yes_no',
       'question_resps.answer_comments',
-      'question_resps.answer_observation' )
+      'question_resps.answer_observation',
+      'application_configs.current_session_start_time',
+      'application_configs.current_session_end_time',
+      'application_configs.current_session_elapsed_time',
+      'application_configs.interview_total_elapsed_time'
+      )
+    .orderBy('question_edited_number')
+    .limit(1)
     .fetch();
   }
-
-
 
 // Atualizando o Método save_and_next
  /*************** */
   /* Save_And_Next */
   /*************** */
-  
-  async save_and_next ({request}) {
+
+  async save_and_next ({request, auth, response}) {
     
     const body = JSON.parse(request.body.json);
     console.log(body);
@@ -355,6 +300,43 @@ async primeiraQuestao ({ request, auth, response}) {
 
     } else {
 
+      /*** Update na resposta do formulário, primeiro exclui as respostas filhas ***/
+      /*
+      try {
+            await Database.raw(('exec proc_delete_question_resps :p_user_id, :p_question_edited_number'),[
+              ':p_user_id', user_id,
+              ':p_question_edited_number', body.next.question_edited_number
+            ]);
+      */
+      try {
+        await Database.raw("CALL `proc_delete_question_resps`("+user_id+", '"+body.next.question_edited_number+"%')");
+          } catch(error) {
+            return response
+            .status(400)
+            .send({ message: 'Não foi possível excluir as respostas = '+body.answer.application_config_id})
+      }
+
+      /*
+
+      SELECT 
+      `question_resps`.`id` AS question_resp_id
+      from `question` 
+      inner join `questionnaire_versions` on `questionnaire_versions`.`id` = `question`.`questionnaire_version_id` 
+      inner join `application_configs` on `application_configs`.`questionnaire_version_id` = `questionnaire_versions`.`id` 
+      inner join `user_parameters` on `user_parameters`.`application_config_id` = `application_configs`.`id` 
+      left outer join `question_resps` on `question_resps`.`question_id` = `question`.`id` 
+      where 
+      `user_parameters`.`id` = 25 AND 
+      `question`.`question_edited_number` LIKE '04%' AND 
+      `questionnaire_versions`.`id` = `user_parameters`.`questionnaire_version_id` AND 
+      `application_configs`.`id` = `user_parameters`.`application_config_id` AND
+      `question_resps`.`answer_yes_no` IS NOT NULL
+
+      */
+
+      /*** Update na resposta do formulário, primeiro exclui as respostas filhas ***/
+      //CALL `proc_delete_question_resps`(user_id, body.next.question_edited_number);
+      
       /*** Update na resposta do formulário ***/
       const answer = await Resposta.findOrFail(question_resp_id);
       answer.merge({
@@ -532,6 +514,7 @@ async primeiraQuestao ({ request, auth, response}) {
     .limit(1)
     .fetch();    
   }
+
 
 }
 
